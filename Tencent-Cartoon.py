@@ -26,11 +26,11 @@ def get_id_by_name(name):
     r = requests.get(aim_url, params=params)
     q = pq(r.text)
     total_count = q.find('.all_total_num').eq(0).text()
-    if total_count != None:
-       index = input("共找到{0}部漫画,请输入你想要下载的漫画的序号".format(total_count))
-       return 'http://ac.qq.com'+q.find('.mod_book_list').find('.mod_book_cover').eq(int(index)-1).attr("href")
+    if total_count != None and total_count !="":
+        index = input("共找到{0}部漫画,请输入你想要下载的漫画的序号".format(total_count))
+        return 'http://ac.qq.com'+q.find('.mod_book_list').find('.mod_book_cover').eq(int(index)-1).attr("href")
     else :
-        print('没有找到与您输入相关的漫画')
+        return '没有找到与您输入相关的漫画'
 
 
 
@@ -66,24 +66,49 @@ def download_pic(url):
     """根据URL下载图片"""
     r = requests.get(url)
     with open(url.split('_')[-1].split('.')[0]+'.jpg', "wb") as file:
-        file.write(r.content)
-        r.close()
+        if os.path.exists(url.split('_')[-1].split('.')[0]+'.jpg') is False:
+            file.write(r.content)
+            r.close() 
+        
 
 
 if  __name__ == "__main__":
-    cur_dir = os.getcwd()
+    
     # print(cur_dir)
     pool = TheadPool(4)
     name_input = input("请输入你想要下载的漫画名称:")
+    
+    
+    # print(aim_dir)
+
+    input_url = get_id_by_name(name_input)
+    cur_dir = os.getcwd()
     if platform.system() == 'Linux':
         aim_dir = cur_dir+'/'+name_input
     elif platform.system() == 'Windows':
         aim_dir = cur_dir+'\\\\'+name_input
-    os.mkdir(aim_dir)
+    if os.path.exists(aim_dir) is False:
+        os.mkdir(aim_dir)
     os.chdir(aim_dir)
-    # print(aim_dir)
 
-    input_url = get_id_by_name(name_input)
+    if input_url.index('没有')!=-1:
+        print(input_url)
+        os.removedirs(aim_dir)
+        need_repeat = input("是否进行重新查找?请输入Y/N")
+        if need_repeat == 'Y':
+            input_url = get_id_by_name(name_input)
+            if platform.system() == 'Linux':
+                aim_dir = cur_dir+'/'+name_input
+            elif platform.system() == 'Windows':
+                aim_dir = cur_dir+'\\\\'+name_input
+            if os.path.exists(aim_dir) is False:
+                os.mkdir(aim_dir)
+            os.chdir(aim_dir)
+        elif need_repeat == 'N':
+            exit()
+        else:
+            print('你个逗比怎么不去死呢')
+            exit()
     # input_url = input("请输入你想要下载的漫画的URL:")
     total_count = get_list_count(input_url)
     list_out = get_list(input_url)
