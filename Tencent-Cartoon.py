@@ -64,24 +64,18 @@ def get_detail_list(url):
 
 def download_pic(url):
     """根据URL下载图片"""
-    r = requests.get(url)
-    with open(url.split('_')[-1].split('.')[0]+'.jpg', "wb") as file:
-        if os.path.exists(url.split('_')[-1].split('.')[0]+'.jpg') is False:
-            file.write(r.content)
-            r.close() 
+    try:
+        if url is not None and url != "":
+            r = requests.get(url)
+            with open(url.split('_')[-1].split('.')[0]+'.jpg', "wb") as file:
+                file.write(r.content)
+    except Exception:
+        exit()
+
         
 
-
-if  __name__ == "__main__":
-    
-    # print(cur_dir)
-    pool = TheadPool(4)
-    name_input = input("请输入你想要下载的漫画名称:")
-    
-    
-    # print(aim_dir)
-
-    input_url = get_id_by_name(name_input)
+def create_dir_by_name(dir_name):
+    """根据名称创建文件夹或将目录移动该文件夹下"""
     cur_dir = os.getcwd()
     if platform.system() == 'Linux':
         aim_dir = cur_dir+'/'+name_input
@@ -91,73 +85,50 @@ if  __name__ == "__main__":
         os.mkdir(aim_dir)
     os.chdir(aim_dir)
 
-    if input_url.index('没有')!=-1:
-        print(input_url)
-        os.removedirs(aim_dir)
-        need_repeat = input("是否进行重新查找?请输入Y/N")
-        if need_repeat == 'Y':
-            input_url = get_id_by_name(name_input)
-            if platform.system() == 'Linux':
-                aim_dir = cur_dir+'/'+name_input
-            elif platform.system() == 'Windows':
-                aim_dir = cur_dir+'\\\\'+name_input
-            if os.path.exists(aim_dir) is False:
-                os.mkdir(aim_dir)
-            os.chdir(aim_dir)
-        elif need_repeat == 'N':
-            exit()
-        else:
-            print('你个逗比怎么不去死呢')
-            exit()
-    # input_url = input("请输入你想要下载的漫画的URL:")
+def download_all(input_url):
+    """根据URL下载漫画文件方法"""
     total_count = get_list_count(input_url)
     list_out = get_list(input_url)
     input_text = input("共找到{0}话".format(total_count)+ \
-    "\r\n请输入你想要下载的章节\r\n如果你想下载全部输入downloadall:")
-
-    try:
-        download_detail_index = int(input_text)
-        if total_count < download_detail_index \
-           or download_detail_index == 0:
-            print('你个逗比, ╤_╤')
-        else:
-            begin_time = datetime.datetime.now()
-            print('开始下载喽........O(∩_∩)O~~\r\n开始时间:'+str(begin_time))
-
-            aim_url =list_out[download_detail_index-1]
-            pic_list = get_detail_list(aim_url)
-            # for i in pic_list:
-            #   download_pic(i)
-
-            results = pool.map(download_pic,pic_list)
-            pool.close()
-            pool.join()
-            end_time = datetime.datetime.now()
-            time_lost = (end_time-begin_time).seconds
-            print('下载完成喽.......O(∩_∩)O~~\r\n共耗时:{0}秒'.format(time_lost))
-
-    except:
-        if input_text == "downloadall":
-            begin_time = datetime.datetime.now()
-            print('开始下载喽........O(∩_∩)O~~\r\n开始时间:'+str(begin_time))
-            pic_list_all = []
-            page_index = 1
-            for i in list_out:
-                print('正在抓取第{0}话的下载地址'.format(page_index))
-                pic_list = get_detail_list(i)
-                page_index+=1
-                # for j in pic_list:
-                #     try:
-                #         download_pic(j)
-                #     except Exception as e :
-                #         print("下载出现了问题.....")
-                #         raise e
+    "\r\n请输入你想要下载的章节\r\n如果你想要下载下载全部,请直接回车:")
+    pic_list_all = []
+    if input_text == "": 
+        page_index = 1
+        for i in list_out:
+            print('正在抓取第{0}话的下载地址'.format(page_index))
+            pic_list = get_detail_list(i)
+            page_index += 1
+            pic_list_all.extend(pic_list)
+    else:
+        try:
+            download_detail_index = int(input_text)
+            if total_count < download_detail_index \
+                or download_detail_index == 0:
+                print('你个逗比, ╤_╤')
+            else:
+                aim_url = list_out[download_detail_index-1]
+                pic_list = get_detail_list(aim_url)
                 pic_list_all.extend(pic_list)
+        except TypeError:
+            print('呵呵')
+    return pic_list_all
 
-            results = pool.map(download_pic,pic_list_all)
-            pool.close()
-            pool.join()
+if  __name__ == "__main__":
+    name_input = input("请输入你想要下载的漫画名称:")
+    input_url = get_id_by_name(name_input)
+    if input_url.find('没有') == -1:
+        pool = TheadPool(13)
+        create_dir_by_name(name_input)
+        begin_time = datetime.datetime.now()
+        pic_list_download = download_all(input_url)
+        print('开始下载喽........O(∩_∩)O~~\r\n开始时间:'+str(begin_time))
+        pool.map(download_pic, pic_list_download)
+        pool.close()
+        pool.join()
+        end_time = datetime.datetime.now()
+        print(end_time)
+        time_lost = (end_time - begin_time).seconds
+        print('下载完成喽.......O(∩_∩)O~~\r\n共耗时:{0}秒'.format(time_lost))
+    else:
+        print(input_url)
 
-            end_time = datetime.datetime.now()
-            time_lost = (end_time-begin_time).seconds
-            print('下载完成喽.......O(∩_∩)O~~\r\n共耗时:{0}秒'.format(time_lost))
