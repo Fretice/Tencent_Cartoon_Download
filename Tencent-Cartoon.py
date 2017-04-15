@@ -1,10 +1,14 @@
 #-*- coding:utf-8 -*-
+import os
 import base64
 import json
 import requests
 import datetime
 from pyquery import PyQuery as pq
-from contextlib import closing
+from multiprocessing.dummy import Pool as TheadPool
+
+
+
 
 def get_id_by_name(name):
     """根据输入的名称获取漫画ID"""
@@ -59,19 +63,29 @@ def get_detail_list(url):
 
 def download_pic(url):
     """根据URL下载图片"""
-    r = requests.get(url)
+    r = requests.get(url, stream=True)
     with open(url.split('_')[-1].split('.')[0]+'.jpg', "wb") as file:
         file.write(r.content)
+        r.close()
 
 
 if  __name__ == "__main__":
+    cur_dir = os.getcwd()
+    print(cur_dir)
+    pool = TheadPool(4)
     name_input = input("请输入你想要下载的漫画名称:")
+    aim_dir = cur_dir+'\\\\'+name_input
+    os.mkdir(aim_dir)
+    os.chdir(aim_dir)
+    print(aim_dir)
+        
     input_url = get_id_by_name(name_input)
     # input_url = input("请输入你想要下载的漫画的URL:")
     total_count = get_list_count(input_url)
     list_out = get_list(input_url)
     input_text = input("共找到{0}话".format(total_count)+ \
     "\r\n如果你想下载全部输入downloadall:")
+
     try:
         download_detail_index = int(input_text)
         if total_count < download_detail_index \
@@ -83,8 +97,12 @@ if  __name__ == "__main__":
             
             aim_url =list_out[download_detail_index-1]
             pic_list = get_detail_list(aim_url)
-            for i in pic_list:
-                download_pic(i)
+            # for i in pic_list:
+            #   download_pic(i)
+
+            results = pool.map(download_pic,pic_list)
+            pool.close()
+            pool.join()
             end_time = datetime.datetime.now()
             time_lost = (end_time-begin_time).seconds
             print('下载完成喽.......O(∩_∩)O~~\r\n共耗时:{0}秒'.format(time_lost))
@@ -93,14 +111,23 @@ if  __name__ == "__main__":
         if input_text == "downloadall":
             begin_time = datetime.datetime.now()
             print('开始下载喽........O(∩_∩)O~~\r\n开始时间:'+str(begin_time))
+            pic_list_all = []
+            page_index = 1
             for i in list_out:
+                print('正在抓取第{0}页的下载地址'.format(page_index))
                 pic_list = get_detail_list(i)
-                for j in pic_list:
-                    try:
-                        download_pic(j)
-                    except Exception as e :
-                        print("下载出现了问题.....")
-                        raise e
+                page_index+=1
+                # for j in pic_list:
+                #     try:
+                #         download_pic(j)
+                #     except Exception as e :
+                #         print("下载出现了问题.....")
+                #         raise e
+                pic_list_all.extend(pic_list)
+            
+            results = pool.map(download_pic,pic_list_all)
+            pool.close()
+            pool.join()
 
             end_time = datetime.datetime.now()
             time_lost = (end_time-begin_time).seconds
