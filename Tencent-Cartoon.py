@@ -64,7 +64,7 @@ def get_detail_list(url):
 
 def download_pic(url):
     """根据URL下载图片"""
-    r = requests.get(url, stream=True)
+    r = requests.get(url)
     with open(url.split('_')[-1].split('.')[0]+'.jpg', "wb") as file:
         file.write(r.content)
         r.close()
