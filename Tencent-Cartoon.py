@@ -72,15 +72,15 @@ def download_pic(url):
     except Exception:
         exit()
 
-        
+
 
 def create_dir_by_name(dir_name):
     """根据名称创建文件夹或将目录移动该文件夹下"""
     cur_dir = os.getcwd()
     if platform.system() == 'Linux':
-        aim_dir = cur_dir+'/'+name_input
+        aim_dir = cur_dir+'/'+dir_name
     elif platform.system() == 'Windows':
-        aim_dir = cur_dir+'\\\\'+name_input
+        aim_dir = cur_dir+'\\\\'+dir_name
     if os.path.exists(aim_dir) is False:
         os.mkdir(aim_dir)
     os.chdir(aim_dir)
@@ -92,7 +92,7 @@ def download_all(input_url):
     input_text = input("共找到{0}话".format(total_count)+ \
     "\r\n请输入你想要下载的章节\r\n如果你想要下载下载全部,请直接回车:")
     pic_list_all = []
-    if input_text == "": 
+    if input_text == "":
         page_index = 1
         for i in list_out:
             print('正在抓取第{0}话的下载地址'.format(page_index))
@@ -131,4 +131,3 @@ if  __name__ == "__main__":
         print('下载完成喽.......O(∩_∩)O~~\r\n共耗时:{0}秒'.format(time_lost))
     else:
         print(input_url)
-
